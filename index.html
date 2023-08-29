@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WEBSOCKET</title>
+  </head>
+  <body>
+    <input id="msg" type="text" />
+    <button id="send">Enviar</button>
+    <button id="close">Cerrar Chat</button>
+    <button id="start">Start Chat</button>
+    <script>
+      let socket = new WebSocket("ws://localhost:5000/chat");
+      console.log("Attempting Websocket Connection");
+
+      socket.onopen = () => {
+        console.log("Successfully Connected");
+      };
+
+      socket.onclose = (event) => {
+        console.log("Socket Closed Connection: ", event);
+      };
+
+      socket.onmessage = (msg) => {
+        console.log(msg);
+      };
+
+      socket.onerror = (error) => {
+        console.log("Socket Error: ", error);
+      };
+
+      let input = document.getElementById("msg");
+      let buttonSend = document.getElementById("send");
+      let buttonClose = document.getElementById("close");
+      let buttonStart = document.getElementById("start");
+
+      buttonSend.addEventListener("click", () => {
+        const val = input.value;
+        socket.send(val);
+      });
+
+      buttonClose.addEventListener("click", () => {
+        socket.close()
+      });
+
+      // buttonStart.addEventListener("click", () => {
+      //   socket.OPEN
+      // });
+    </script>
+  </body>
+  <style>
+    body {
+      background: #333333;
+    }
+  </style>
+</html>
