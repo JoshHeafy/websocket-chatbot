@@ -10,7 +10,11 @@ import (
 
 func homePage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	data := map[string]interface{}{"api": "WebSocket with OpenAi", "version": "1.0.0", "Author": "Joshar Cordova"}
+	data := map[string]interface{}{
+		"Websocket": "WebSocket with OpenAi",
+		"Version":   "1.0.0",
+		"Author":    "Joshar Cordova",
+	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(data)
 }
