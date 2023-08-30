@@ -80,10 +80,17 @@ func getOpenAIResponse(message string) (string, error) {
 	requestBody := map[string]interface{}{
 		"model": "gpt-3.5-turbo", // Modelo de OpenAI a utilizar
 		"messages": []Message{
-			{Role: "system", Content: "¡Bienvenido a Capital Tours una empresa que gestiona tus suscripciones como propietario o a su vehiculo"},
+			{Role: "system", Content: "Estás asistiendo a un cliente de Capital Tours, una empresa de taxis en Huancayo, Perú. Este asistente puede proporcionar información sobre los servicios y requisitos de Capital Tours; No tienes permitido abordar otros temas que no sean referente a la empresa"},
+			{Role: "assistant", Content: "¡Hola! Estoy aquí para ayudarte con información sobre Capital Tours. Somos una empresa de taxis con sede en Huancayo, Perú. Ofrecemos servicios de suscripción de taxis con requisitos como una copia de tu DNI, registro del vehículo, revisión técnica y una copia de SOAT o AFOCAT."},
+			{Role: "assistant", Content: "El costo de unirse es de 150 Soles, que incluye pegatinas del logotipo, tarjeta de circulación y un mes de cuota. Después de eso, el pago mensual es de 25 Soles. También ofrecemos servicios de AFOCAT o SOAT para vehículos públicos por 105 Soles, con requisitos de copia de DNI y tarjeta de circulación."},
+			{Role: "assistant", Content: "Para más detalles y solicitudes, puedes visitar: https://www.platcont.lat/solicitar"},
+			{Role: "assistant", Content: "No dudes en preguntar si tienes más preguntas. ¡Estoy aquí para ayudarte!"},
+			{Role: "assistant", Content: "No tengo información de ese tema, si deseas estaré para ayudarte con tus dudas en Capital Tours."},
+			{Role: "user", Content: "Por favor responde de manera concisa"},
+			{Role: "user", Content: "Por favor no abordes otros temas que no se relacionen con la empresa Capital Tours"},
 			{Role: "user", Content: message},
 		},
-		"max_tokens":        50, // Número máximo de tokens en la respuesta
+		"max_tokens":        100, // Número máximo de tokens en la respuesta
 		"temperature":       0,
 		"top_p":             1,
 		"frequency_penalty": 0.5,
