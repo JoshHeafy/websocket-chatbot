@@ -11,7 +11,7 @@
     <button id="close">Cerrar Chat</button>
     <button id="start">Start Chat</button>
     <script>
-      let socket = new WebSocket("ws://localhost:5000/chat");
+      let socket = new WebSocket("ws://localhost:2000/location");
       console.log("Attempting Websocket Connection");
 
       socket.onopen = () => {
@@ -24,6 +24,7 @@
 
       socket.onmessage = (msg) => {
         console.log(msg);
+        console.log(msg.data);
       };
 
       socket.onerror = (error) => {
@@ -36,12 +37,28 @@
       let buttonStart = document.getElementById("start");
 
       buttonSend.addEventListener("click", () => {
-        const val = input.value;
-        socket.send(val);
+        // const val = input.value;
+        const dataInsert = {
+          typeSend: "insert",
+          data: {
+            nombre: "alex mcfly",
+            latitud: -12.056501,
+            longitud: -75.218994,
+            numero_placa: "TFV-456",
+            numero_flota: 36,
+          },
+        };
+        const dataDelete = {
+          typeSend: "delete",
+          data: {
+            id_location: "937e6b05-93c2-4711-bc83-c66962b77eba",
+          },
+        };
+        socket.send(JSON.stringify(dataDelete));
       });
 
       buttonClose.addEventListener("click", () => {
-        socket.close()
+        socket.close();
       });
 
       // buttonStart.addEventListener("click", () => {

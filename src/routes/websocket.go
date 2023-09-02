@@ -2,6 +2,8 @@ package routes
 
 import (
 	"bytes"
+	"chatbot/src/database/models/tables"
+	"chatbot/src/database/orm"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -24,10 +26,11 @@ type Message struct {
 }
 
 func RoutesWebSocket() {
-	http.HandleFunc("/chat", wsEndpoint)
+	http.HandleFunc("/chat", wsChatbotEndpoint)
+	http.HandleFunc("/location", wsLocationsEndpoint)
 }
 
-func wsEndpoint(w http.ResponseWriter, r *http.Request) {
+func wsChatbotEndpoint(w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 
 	ws, err := upgrader.Upgrade(w, r, nil)
@@ -38,10 +41,10 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("Client Successfully Connected...")
 
-	reader(ws)
+	readerIA(ws)
 }
 
-func reader(conn *websocket.Conn) {
+func readerIA(conn *websocket.Conn) {
 	for {
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {
@@ -140,4 +143,143 @@ func getOpenAIResponse(message string) (string, error) {
 	}
 
 	return "", fmt.Errorf("no se pudo obtener una respuesta de OpenAI")
+}
+
+func wsLocationsEndpoint(w http.ResponseWriter, r *http.Request) {
+	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+	}
+
+	log.Println("Locations connected")
+
+	_locations := getLocations()
+
+	bytesResultado, err := json.Marshal(_locations)
+	if err != nil {
+		log.Println("error al convertir")
+	}
+
+	err = ws.WriteMessage(1, []byte(bytesResultado))
+	if err != nil {
+		log.Println(err)
+	}
+
+	readerLocations(ws)
+}
+
+func readerLocations(conn *websocket.Conn) {
+	defer func() { conn.Close() }()
+
+	for {
+		messageType, p, err := conn.ReadMessage()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		// TRAER DATA DE EL CLIENTE
+		var data map[string]interface{}
+
+		errData := json.Unmarshal(p, &data)
+		if errData != nil {
+			fmt.Println("Error al deserializar JSON:", err)
+			return
+		}
+
+		var crudReturn []map[string]interface{}
+
+		if data["typeSend"] == "insert" {
+			crudReturn = append(
+				crudReturn,
+				insertLocation(data["data"].(map[string]interface{})),
+			)
+		}
+
+		if data["typeSend"] == "delete" {
+			crudReturn = append(
+				crudReturn,
+				deleteLocation(data["data"].(map[string]interface{})),
+			)
+		}
+
+		fmt.Println(crudReturn)
+
+		// GET LOCATIONS
+		_locations := getLocations()
+		bytesResultado, err := json.Marshal(_locations)
+		if err != nil {
+			log.Println("error al convertir")
+		}
+		err = conn.WriteMessage(messageType, []byte(bytesResultado))
+		if err != nil {
+			log.Println(err)
+		}
+	}
+}
+
+func getLocations() []map[string]interface{} {
+	_data_solicitudes := orm.NewQuerys("locations").Select().Exec(orm.Config_Query{Cloud: true}).All()
+
+	if len(_data_solicitudes) <= 0 {
+		var response []map[string]interface{}
+		response = append(response, map[string]interface{}{
+			"msg": "error al obtener solicitudes",
+		})
+		return response
+	}
+	return _data_solicitudes
+}
+
+func insertLocation(data map[string]interface{}) map[string]interface{} {
+	data_insert := append([]map[string]interface{}{}, data)
+
+	schema, table := tables.Locations_GetSchema()
+	solicitudes := orm.SqlExec{}
+	err := solicitudes.New(data_insert, table).Insert(schema)
+	if err != nil {
+		return map[string]interface{}{
+			"msg":   "Ocurrió un error al insertar Locacion",
+			"error": err,
+		}
+	}
+
+	err = solicitudes.Exec()
+	if err != nil {
+		return map[string]interface{}{
+			"msg":   "Ocurrió un error al insertar Locacion",
+			"error": err,
+		}
+	}
+
+	return solicitudes.Data[0]
+}
+
+func deleteLocation(data map[string]interface{}) map[string]interface{} {
+	var data_delete []map[string]interface{}
+
+	data_delete = append(data_delete, map[string]interface{}{
+		"id_location": data["id_location"],
+	})
+
+	schema, table := tables.Locations_GetSchema()
+	solicitudes := orm.SqlExec{}
+	err := solicitudes.New(data_delete, table).Delete(schema)
+	if err != nil {
+		return map[string]interface{}{
+			"msg":   "Ocurrió un error al eliminar Locacion",
+			"error": err,
+		}
+	}
+
+	err = solicitudes.Exec()
+	if err != nil {
+		return map[string]interface{}{
+			"msg":   "Ocurrió un error al eliminar Locacion",
+			"error": err,
+		}
+	}
+
+	return solicitudes.Data[0]
 }
