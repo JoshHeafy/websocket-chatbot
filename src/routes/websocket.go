@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
@@ -24,6 +25,9 @@ type Message struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
+
+var clients = make(map[*websocket.Conn]bool) // Map para almacenar conexiones activas
+var clientsMutex sync.Mutex
 
 func RoutesWebSocket() {
 	http.HandleFunc("/chat", wsChatbotEndpoint)
@@ -153,6 +157,10 @@ func wsLocationsEndpoint(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
+	clientsMutex.Lock()
+	clients[ws] = true
+	clientsMutex.Unlock()
+
 	log.Println("Locations connected")
 
 	_locations := getLocations()
@@ -171,7 +179,13 @@ func wsLocationsEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func readerLocations(conn *websocket.Conn) {
-	defer func() { conn.Close() }()
+	defer func() {
+		conn.Close()
+		// Eliminar la conexión de la lista de clientes cuando se cierra
+		clientsMutex.Lock()
+		delete(clients, conn)
+		clientsMutex.Unlock()
+	}()
 
 	for {
 		messageType, p, err := conn.ReadMessage()
@@ -212,10 +226,16 @@ func readerLocations(conn *websocket.Conn) {
 		if err != nil {
 			log.Println("error al convertir")
 		}
-		err = conn.WriteMessage(messageType, []byte(bytesResultado))
-		if err != nil {
-			log.Println(err)
+
+		// Enviar el mensaje a todos los clientes conectados
+		clientsMutex.Lock()
+		for client := range clients {
+			err = client.WriteMessage(messageType, []byte(bytesResultado))
+			if err != nil {
+				log.Println(err)
+			}
 		}
+		clientsMutex.Unlock()
 	}
 }
 
