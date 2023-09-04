@@ -97,7 +97,7 @@ func getOpenAIResponse(message string) (string, error) {
 			{Role: "user", Content: "Por favor no abordes otros temas que no se relacionen con la empresa Capital Tours"},
 			{Role: "user", Content: message},
 		},
-		"max_tokens":        100, // Número máximo de tokens en la respuesta
+		"max_tokens":        200, // Número máximo de tokens en la respuesta
 		"temperature":       0,
 		"top_p":             1,
 		"frequency_penalty": 0.5,
